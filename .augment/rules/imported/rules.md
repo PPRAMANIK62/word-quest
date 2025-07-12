@@ -18,8 +18,21 @@ type: "always_apply"
 
 ### Package Manager
 
-- **pnpm** and **pnpm dlx**- Use exclusively for package management
+- **pnpm** and **pnpm dlx** - Use exclusively for package management
 - Never use npm, yarn, or bun or npx, bunx etc. unless absolutely necessary
+
+### Code Quality & Linting
+
+- **ESLint** - Use @antfu/eslint-config with the following configuration:
+  - TypeScript support enabled
+  - Formatters enabled
+  - Stylistic rules: 2-space indentation, semicolons, double quotes
+  - Custom rules:
+    - `ts/consistent-type-definitions`: Use `type` instead of `interface`
+    - `no-console`: Warn on console usage
+    - `node/no-process-env`: Error on direct process.env access (use env.ts)
+    - `perfectionist/sort-imports`: Enforce sorted imports
+    - `unicorn/filename-case`: Enforce kebab-case filenames (except README.md)
 
 ## UI/UX Guidelines
 
