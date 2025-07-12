@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-import type { Database } from "@/types/database";
+import type { Database } from "@/types/supabase";
 
 import { env } from "@/env";
 
@@ -38,6 +38,46 @@ export async function signOut() {
     console.error("Error signing out:", error);
     throw error;
   }
+}
+
+// Helper function to get user profile from public.profiles table
+export async function getUserProfile(userId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  if (error) {
+    console.error("Error getting user profile:", error);
+    return null;
+  }
+
+  return data;
+}
+
+// Helper function to update user profile
+export async function updateUserProfile(userId: string, updates: Partial<{
+  display_name: string;
+  selected_language: string;
+  total_points: number;
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string;
+}>) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(updates)
+    .eq("id", userId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating user profile:", error);
+    throw error;
+  }
+
+  return data;
 }
 
 // Helper function to check connection

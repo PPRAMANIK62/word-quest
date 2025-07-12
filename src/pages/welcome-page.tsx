@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 
 import { LoginButton } from "@/components/auth/login-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/hooks/use-auth";
 
 export function WelcomePage() {
@@ -21,7 +22,12 @@ export function WelcomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4 relative">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+
       <div className="max-w-4xl mx-auto text-center space-y-8">
         {/* Hero Section */}
         <div className="space-y-4">

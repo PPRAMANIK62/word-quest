@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { UserMenu } from "@/components/auth/user-menu";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Layout() {
   const location = useLocation();
@@ -74,8 +75,9 @@ export function Layout() {
               })}
             </nav>
 
-            {/* User Menu */}
-            <div className="flex items-center">
+            {/* Theme Toggle and User Menu */}
+            <div className="flex items-center space-x-2">
+              <ThemeToggle />
               <UserMenu />
             </div>
           </div>

@@ -5,6 +5,44 @@ import { toast } from "sonner";
 
 import { supabase } from "@/lib/supabase";
 
+// Helper function to ensure user profile exists in public.profiles table
+async function ensureUserProfile(user: User) {
+  try {
+    // Check if user profile already exists
+    const { data: existingProfile, error: fetchError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .single();
+
+    if (fetchError && fetchError.code !== "PGRST116") {
+      // PGRST116 is "not found" error, which is expected for new users
+      console.error("Error checking user profile:", fetchError);
+      return;
+    }
+
+    // If profile doesn't exist, create the record
+    if (!existingProfile) {
+      const { error: insertError } = await supabase
+        .from("profiles")
+        .insert({
+          id: user.id,
+          email: user.email || "",
+          display_name: user.user_metadata?.full_name || user.email || "",
+        });
+
+      if (insertError) {
+        console.error("Error creating user profile:", insertError);
+        // Don't show error to user as this is a background operation
+        // and the database trigger should handle this automatically
+      }
+    }
+  }
+  catch (error) {
+    console.error("Error in ensureUserProfile:", error);
+  }
+}
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
@@ -64,9 +102,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setLoading(false);
 
         // Handle different auth events
-        if (event === "SIGNED_IN") {
-          const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split("@")[0];
+        if (event === "SIGNED_IN" && session?.user) {
+          const userName = session.user.user_metadata?.full_name || session.user.email?.split("@")[0];
           toast.success(`Welcome back, ${userName}!`);
+
+          // Ensure user profile exists in public.profiles table (fallback)
+          await ensureUserProfile(session.user);
         }
         else if (event === "SIGNED_OUT") {
           toast.success("You've been signed out successfully");
