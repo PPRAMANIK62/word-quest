@@ -1,10 +1,25 @@
+import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Link } from "react-router-dom";
 
 export function LessonsPage() {
+  const handleLessonAction = (lessonId: number, lessonTitle: string, action: "start" | "continue" | "review") => {
+    const actionMessages = {
+      start: `Starting "${lessonTitle}" lesson...`,
+      continue: `Continuing "${lessonTitle}" lesson...`,
+      review: `Reviewing "${lessonTitle}" lesson...`,
+    };
+
+    toast.info(actionMessages[action]);
+    // Navigate to lesson (placeholder for now)
+    setTimeout(() => {
+      toast.success(`Lesson "${lessonTitle}" loaded successfully!`);
+    }, 1000);
+  };
+
   const lessons = [
     {
       id: 1,
@@ -20,7 +35,7 @@ export function LessonsPage() {
       id: 2,
       title: "Numbers 1-20",
       description: "Master counting from one to twenty",
-      difficulty: "Beginner", 
+      difficulty: "Beginner",
       progress: 100,
       completed: true,
       words: 20,
@@ -118,12 +133,12 @@ export function LessonsPage() {
 
       {/* Lessons Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {lessons.map((lesson) => (
-          <Card 
-            key={lesson.id} 
+        {lessons.map(lesson => (
+          <Card
+            key={lesson.id}
             className={`relative transition-all duration-200 ${
-              lesson.locked 
-                ? "opacity-60 cursor-not-allowed" 
+              lesson.locked
+                ? "opacity-60 cursor-not-allowed"
                 : "hover:shadow-lg hover:scale-105 cursor-pointer"
             }`}
           >
@@ -134,7 +149,7 @@ export function LessonsPage() {
                 </Badge>
               </div>
             )}
-            
+
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="text-3xl mb-2">{lesson.icon}</div>
@@ -147,43 +162,56 @@ export function LessonsPage() {
                 {lesson.description}
               </CardDescription>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">
-                  {lesson.words} words
+                  {lesson.words}
+                  {" "}
+                  words
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">
-                  {lesson.progress}% complete
+                  {lesson.progress}
+                  % complete
                 </span>
               </div>
-              
+
               <Progress value={lesson.progress} className="h-2" />
-              
+
               <div className="pt-2">
-                {lesson.completed ? (
-                  <Button asChild variant="outline" className="w-full">
-                    <Link to={`/lessons/${lesson.id}`}>
-                      ✅ Review Lesson
-                    </Link>
-                  </Button>
-                ) : lesson.locked ? (
-                  <Button disabled className="w-full">
-                    🔒 Complete previous lessons
-                  </Button>
-                ) : lesson.progress > 0 ? (
-                  <Button asChild className="w-full">
-                    <Link to={`/lessons/${lesson.id}`}>
-                      ▶️ Continue Lesson
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button asChild className="w-full">
-                    <Link to={`/lessons/${lesson.id}`}>
-                      🚀 Start Lesson
-                    </Link>
-                  </Button>
-                )}
+                {lesson.completed
+                  ? (
+                      <Button
+                        onClick={() => handleLessonAction(lesson.id, lesson.title, "review")}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        ✅ Review Lesson
+                      </Button>
+                    )
+                  : lesson.locked
+                    ? (
+                        <Button disabled className="w-full">
+                          🔒 Complete previous lessons
+                        </Button>
+                      )
+                    : lesson.progress > 0
+                      ? (
+                          <Button
+                            onClick={() => handleLessonAction(lesson.id, lesson.title, "continue")}
+                            className="w-full"
+                          >
+                            ▶️ Continue Lesson
+                          </Button>
+                        )
+                      : (
+                          <Button
+                            onClick={() => handleLessonAction(lesson.id, lesson.title, "start")}
+                            className="w-full"
+                          >
+                            🚀 Start Lesson
+                          </Button>
+                        )}
               </div>
             </CardContent>
           </Card>

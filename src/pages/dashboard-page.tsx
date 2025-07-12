@@ -1,13 +1,30 @@
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Link, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
 
 export function DashboardPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
   const selectedLanguage = searchParams.get("lang") || "spanish";
-  
+  const showLanguageSelection = !searchParams.get("lang");
+
+  // Auto-set default language if none is selected
+  useEffect(() => {
+    if (!searchParams.get("lang")) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("lang", "spanish");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   const languageConfig = {
     spanish: {
       flag: "🇪🇸",
@@ -15,13 +32,80 @@ export function DashboardPage() {
       color: "bg-red-500",
     },
     german: {
-      flag: "🇩🇪", 
+      flag: "🇩🇪",
       name: "German",
       color: "bg-yellow-500",
     },
   };
 
   const config = languageConfig[selectedLanguage as keyof typeof languageConfig] || languageConfig.spanish;
+
+  const handleLanguageSelect = (language: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("lang", language);
+    setSearchParams(newParams);
+    const languageName = languageConfig[language as keyof typeof languageConfig]?.name || language;
+    toast.success(`Great choice! You're now learning ${languageName}.`);
+  };
+
+  const handleStartLesson = () => {
+    toast.info("Starting your next lesson...");
+    navigate("/lessons");
+  };
+
+  const handleStartReview = () => {
+    toast.info("Loading your review session...");
+    navigate("/review");
+  };
+
+  const handleViewProgress = () => {
+    toast.info("Loading your progress stats...");
+    navigate("/progress");
+  };
+
+  // Show language selection if no language is selected
+  if (showLanguageSelection || !selectedLanguage) {
+    return (
+      <div className="container mx-auto p-6 max-w-2xl">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">
+              Welcome to WordQuest,
+              {" "}
+              {user?.user_metadata?.full_name || user?.email?.split("@")[0]}
+              !
+            </CardTitle>
+            <CardDescription>
+              Choose your language to start your learning journey
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <Button
+                onClick={() => handleLanguageSelect("spanish")}
+                size="lg"
+                className="h-20 text-lg bg-red-500 hover:bg-red-600 flex flex-col gap-2"
+              >
+                <span className="text-2xl">🇪🇸</span>
+                <span>Learn Spanish</span>
+              </Button>
+              <Button
+                onClick={() => handleLanguageSelect("german")}
+                size="lg"
+                className="h-20 text-lg bg-yellow-500 hover:bg-yellow-600 text-black flex flex-col gap-2"
+              >
+                <span className="text-2xl">🇩🇪</span>
+                <span>Learn German</span>
+              </Button>
+            </div>
+            <p className="text-sm text-center text-gray-500 dark:text-gray-400">
+              You can change languages anytime from your dashboard
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-8">
@@ -32,11 +116,17 @@ export function DashboardPage() {
             Welcome back!
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
-            Continue your {config.name} learning journey
+            Continue your
+            {" "}
+            {config.name}
+            {" "}
+            learning journey
           </p>
         </div>
         <Badge variant="secondary" className="text-lg p-2">
-          {config.flag} {config.name}
+          {config.flag}
+          {" "}
+          {config.name}
         </Badge>
       </div>
 
@@ -96,7 +186,9 @@ export function DashboardPage() {
         <CardHeader>
           <CardTitle>Current Progress</CardTitle>
           <CardDescription>
-            Your learning journey in {config.name}
+            Your learning journey in
+            {" "}
+            {config.name}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -125,8 +217,8 @@ export function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full">
-              <Link to="/lessons">Start Lesson</Link>
+            <Button onClick={handleStartLesson} className="w-full">
+              Start Lesson
             </Button>
           </CardContent>
         </Card>
@@ -141,8 +233,8 @@ export function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/review">Start Review</Link>
+            <Button onClick={handleStartReview} variant="outline" className="w-full">
+              Start Review
             </Button>
           </CardContent>
         </Card>
@@ -157,8 +249,8 @@ export function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/progress">View Stats</Link>
+            <Button onClick={handleViewProgress} variant="outline" className="w-full">
+              View Stats
             </Button>
           </CardContent>
         </Card>

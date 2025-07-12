@@ -152,7 +152,7 @@ export function ProgressPage() {
               1,250 XP
             </Badge>
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Progress to Intermediate</span>
@@ -160,7 +160,7 @@ export function ProgressPage() {
             </div>
             <Progress value={62.5} className="h-3" />
           </div>
-          
+
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Earn 750 more XP to reach Intermediate level!
           </p>
@@ -183,16 +183,30 @@ export function ProgressPage() {
                   {day.day}
                 </div>
                 <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 space-y-1">
-                  <div className="text-xs text-gray-500">Lessons: {day.lessons}</div>
-                  <div className="text-xs text-gray-500">Reviews: {day.reviews}</div>
-                  <div className="text-sm font-bold text-blue-600">{day.points} XP</div>
+                  <div className="text-xs text-gray-500">
+                    Lessons:
+                    {day.lessons}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Reviews:
+                    {day.reviews}
+                  </div>
+                  <div className="text-sm font-bold text-blue-600">
+                    {day.points}
+                    {" "}
+                    XP
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-          
+
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{totalWeeklyPoints} XP</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {totalWeeklyPoints}
+              {" "}
+              XP
+            </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Total this week</div>
           </div>
         </CardContent>
@@ -208,7 +222,7 @@ export function ProgressPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {achievements.map((achievement) => (
+            {achievements.map(achievement => (
               <div
                 key={achievement.id}
                 className={`p-4 rounded-lg border-2 transition-all ${
@@ -226,20 +240,27 @@ export function ProgressPage() {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       {achievement.description}
                     </p>
-                    
-                    {achievement.earned ? (
-                      <Badge variant="secondary" className="text-xs">
-                        ✅ Earned {achievement.earnedDate}
-                      </Badge>
-                    ) : (
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span>Progress</span>
-                          <span>{achievement.progress}%</span>
-                        </div>
-                        <Progress value={achievement.progress} className="h-1" />
-                      </div>
-                    )}
+
+                    {achievement.earned
+                      ? (
+                          <Badge variant="secondary" className="text-xs">
+                            ✅ Earned
+                            {" "}
+                            {achievement.earnedDate}
+                          </Badge>
+                        )
+                      : (
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span>Progress</span>
+                              <span>
+                                {achievement.progress}
+                                %
+                              </span>
+                            </div>
+                            <Progress value={achievement.progress} className="h-1" />
+                          </div>
+                        )}
                   </div>
                 </div>
               </div>
@@ -267,7 +288,7 @@ export function ProgressPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
               <span className="text-xl">📈</span>
               <div>
@@ -277,7 +298,7 @@ export function ProgressPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <span className="text-xl">🎯</span>
               <div>

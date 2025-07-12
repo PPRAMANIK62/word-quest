@@ -1,9 +1,25 @@
-import { Link } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
-import { Button } from "@/components/ui/button";
+import { LoginButton } from "@/components/auth/login-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
 
 export function WelcomePage() {
+  const { isAuthenticated, loading } = useAuth();
+
+  // Redirect to dashboard if already authenticated
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="max-w-4xl mx-auto text-center space-y-8">
@@ -56,37 +72,45 @@ export function WelcomePage() {
           </Card>
         </div>
 
-        {/* Language Selection */}
+        {/* Authentication & Language Selection */}
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
-            <CardTitle>Choose Your Language</CardTitle>
+            <CardTitle>Get Started with WordQuest</CardTitle>
             <CardDescription>
-              Start your journey with Spanish or German
+              Sign in with Google to start your language learning journey
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <Button
-                asChild
-                size="lg"
-                className="h-16 text-lg bg-red-500 hover:bg-red-600"
-              >
-                <Link to="/dashboard?lang=spanish">
-                  🇪🇸 Learn Spanish
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                className="h-16 text-lg bg-yellow-500 hover:bg-yellow-600 text-black"
-              >
-                <Link to="/dashboard?lang=german">
-                  🇩🇪 Learn German
-                </Link>
-              </Button>
+          <CardContent className="space-y-6">
+            {/* Google Sign In */}
+            <div className="flex justify-center">
+              <LoginButton size="lg" className="w-full max-w-sm" />
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              You can change languages anytime from your dashboard
+
+            {/* Language Preview */}
+            <div className="space-y-4">
+              <p className="text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                Available Languages
+              </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 border-2 border-red-200 dark:border-red-800 rounded-lg text-center">
+                  <div className="text-2xl mb-2">🇪🇸</div>
+                  <h3 className="font-semibold text-red-600 dark:text-red-400">Spanish</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Learn conversational Spanish
+                  </p>
+                </div>
+                <div className="p-4 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg text-center">
+                  <div className="text-2xl mb-2">🇩🇪</div>
+                  <h3 className="font-semibold text-yellow-600 dark:text-yellow-400">German</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Master German basics
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+              Choose your language after signing in
             </p>
           </CardContent>
         </Card>

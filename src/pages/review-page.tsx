@@ -1,13 +1,32 @@
+import { useState } from "react";
+import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { useState } from "react";
 
 export function ReviewPage() {
   const [currentCard, setCurrentCard] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [reviewMode, setReviewMode] = useState<"select" | "flashcard">("select");
+
+  const handleStartReview = (setTitle: string, wordCount: number) => {
+    toast.info(`Starting review session: ${setTitle}`);
+    setReviewMode("flashcard");
+    setTimeout(() => {
+      toast.success(`Loaded ${wordCount} words for review!`);
+    }, 500);
+  };
+
+  const handleCardAnswer = (difficulty: "easy" | "medium" | "hard") => {
+    const messages = {
+      easy: "Great! This word will appear less frequently.",
+      medium: "Good! You'll see this word again soon.",
+      hard: "No worries! This word will be reviewed more often.",
+    };
+    toast.success(messages[difficulty]);
+  };
 
   const reviewSets = [
     {
@@ -86,17 +105,17 @@ export function ReviewPage() {
 
   const handleNextCard = () => {
     setShowAnswer(false);
-    setCurrentCard((prev) => (prev + 1) % flashcards.length);
+    setCurrentCard(prev => (prev + 1) % flashcards.length);
   };
 
   const handlePrevCard = () => {
     setShowAnswer(false);
-    setCurrentCard((prev) => (prev - 1 + flashcards.length) % flashcards.length);
+    setCurrentCard(prev => (prev - 1 + flashcards.length) % flashcards.length);
   };
 
   if (reviewMode === "flashcard") {
     const card = flashcards[currentCard];
-    
+
     return (
       <div className="container mx-auto p-6 max-w-2xl">
         {/* Header */}
@@ -106,11 +125,17 @@ export function ReviewPage() {
               Flashcard Review
             </h1>
             <p className="text-gray-600 dark:text-gray-300">
-              Card {currentCard + 1} of {flashcards.length}
+              Card
+              {" "}
+              {currentCard + 1}
+              {" "}
+              of
+              {" "}
+              {flashcards.length}
             </p>
           </div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => setReviewMode("select")}
           >
             ← Back to Review Sets
@@ -128,21 +153,27 @@ export function ReviewPage() {
             <div className="text-5xl font-bold text-blue-600 dark:text-blue-400">
               {card.word}
             </div>
-            
+
             {showAnswer && (
               <div className="space-y-4 animate-in fade-in duration-300">
                 <div className="text-2xl font-semibold text-gray-900 dark:text-white">
                   {card.translation}
                 </div>
                 <div className="text-lg text-gray-600 dark:text-gray-400">
-                  /{card.pronunciation}/
+                  /
+                  {card.pronunciation}
+                  /
                 </div>
                 <div className="border-t pt-4 space-y-2">
                   <div className="text-lg italic text-gray-700 dark:text-gray-300">
-                    "{card.example}"
+                    "
+                    {card.example}
+                    "
                   </div>
                   <div className="text-base text-gray-600 dark:text-gray-400">
-                    "{card.exampleTranslation}"
+                    "
+                    {card.exampleTranslation}
+                    "
                   </div>
                 </div>
               </div>
@@ -152,31 +183,33 @@ export function ReviewPage() {
 
         {/* Controls */}
         <div className="flex justify-center gap-4 mb-8">
-          {!showAnswer ? (
-            <Button 
-              onClick={() => setShowAnswer(true)}
-              size="lg"
-              className="px-8"
-            >
-              Show Answer
-            </Button>
-          ) : (
-            <div className="flex gap-4">
-              <Button 
-                variant="outline" 
-                onClick={handlePrevCard}
-                disabled={currentCard === 0}
-              >
-                ← Previous
-              </Button>
-              <Button 
-                onClick={handleNextCard}
-                className="px-8"
-              >
-                {currentCard === flashcards.length - 1 ? "Finish" : "Next →"}
-              </Button>
-            </div>
-          )}
+          {!showAnswer
+            ? (
+                <Button
+                  onClick={() => setShowAnswer(true)}
+                  size="lg"
+                  className="px-8"
+                >
+                  Show Answer
+                </Button>
+              )
+            : (
+                <div className="flex gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={handlePrevCard}
+                    disabled={currentCard === 0}
+                  >
+                    ← Previous
+                  </Button>
+                  <Button
+                    onClick={handleNextCard}
+                    className="px-8"
+                  >
+                    {currentCard === flashcards.length - 1 ? "Finish" : "Next →"}
+                  </Button>
+                </div>
+              )}
         </div>
 
         {/* Difficulty Feedback */}
@@ -187,13 +220,25 @@ export function ReviewPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
-                <Button variant="outline" className="text-green-600 border-green-600">
+                <Button
+                  onClick={() => handleCardAnswer("easy")}
+                  variant="outline"
+                  className="text-green-600 border-green-600"
+                >
                   😊 Easy
                 </Button>
-                <Button variant="outline" className="text-yellow-600 border-yellow-600">
+                <Button
+                  onClick={() => handleCardAnswer("medium")}
+                  variant="outline"
+                  className="text-yellow-600 border-yellow-600"
+                >
                   😐 Medium
                 </Button>
-                <Button variant="outline" className="text-red-600 border-red-600">
+                <Button
+                  onClick={() => handleCardAnswer("hard")}
+                  variant="outline"
+                  className="text-red-600 border-red-600"
+                >
                   😰 Hard
                 </Button>
               </div>
@@ -257,23 +302,24 @@ export function ReviewPage() {
 
       {/* Review Sets */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {reviewSets.map((set) => (
-          <Card 
-            key={set.id} 
-            className="hover:shadow-lg transition-all duration-200 cursor-pointer"
-            onClick={() => setReviewMode("flashcard")}
+        {reviewSets.map(set => (
+          <Card
+            key={set.id}
+            className="hover:shadow-lg transition-all duration-200"
           >
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="text-3xl mb-2">{set.icon}</div>
                 <Badge className={getPriorityColor(set.priority)}>
-                  {set.priority} priority
+                  {set.priority}
+                  {" "}
+                  priority
                 </Badge>
               </div>
               <CardTitle className="text-lg">{set.title}</CardTitle>
               <CardDescription>{set.description}</CardDescription>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-2xl font-bold text-blue-600">
@@ -283,8 +329,11 @@ export function ReviewPage() {
                   {set.count === 1 ? "word" : "words"}
                 </span>
               </div>
-              
-              <Button className="w-full">
+
+              <Button
+                onClick={() => handleStartReview(set.title, set.count)}
+                className="w-full"
+              >
                 Start Review Session
               </Button>
             </CardContent>

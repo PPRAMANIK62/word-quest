@@ -1,6 +1,8 @@
-import { Button } from "@/components/ui/button";
 import { BookOpen, Home, RotateCcw, TrendingUp } from "lucide-react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+
+import { ProtectedRoute } from "@/components/auth/protected-route";
+import { UserMenu } from "@/components/auth/user-menu";
 
 export function Layout() {
   const location = useLocation();
@@ -35,7 +37,7 @@ export function Layout() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -63,8 +65,7 @@ export function Layout() {
                         isActive
                           ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
                           : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700"
-                      }`
-                    }
+                      }`}
                   >
                     <Icon className="w-4 h-4" />
                     <span>{item.label}</span>
@@ -74,18 +75,8 @@ export function Layout() {
             </nav>
 
             {/* User Menu */}
-            <div className="flex items-center space-x-4">
-              {/* Language Selector */}
-              <Button variant="outline" size="sm" className="hidden sm:flex">
-                🇪🇸 Spanish
-              </Button>
-              
-              {/* User Avatar */}
-              <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  U
-                </span>
-              </div>
+            <div className="flex items-center">
+              <UserMenu />
             </div>
           </div>
         </div>
@@ -106,8 +97,7 @@ export function Layout() {
                       isActive
                         ? "text-blue-700 dark:text-blue-300"
                         : "text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-                    }`
-                  }
+                    }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{item.label}</span>
@@ -119,8 +109,10 @@ export function Layout() {
       </nav>
 
       {/* Main Content */}
-      <main className="flex-1">
-        <Outlet />
+      <main className="flex-1 flex flex-col">
+        <ProtectedRoute>
+          <Outlet />
+        </ProtectedRoute>
       </main>
 
       {/* Footer */}
@@ -135,7 +127,7 @@ export function Layout() {
                 WordQuest - Learn languages with gamification
               </span>
             </div>
-            
+
             <div className="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400">
               <Link to="/about" className="hover:text-gray-900 dark:hover:text-white">
                 About
