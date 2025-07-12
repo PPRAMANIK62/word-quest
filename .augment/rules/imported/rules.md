@@ -1,5 +1,5 @@
 ---
-type: "manual"
+type: "always_apply"
 ---
 
 # Word Quest - Augment Rules
@@ -18,8 +18,8 @@ type: "manual"
 
 ### Package Manager
 
-- **pnpm** - Use exclusively for package management
-- Never use npm, yarn, or bun unless absolutely necessary
+- **pnpm** and **pnpm dlx**- Use exclusively for package management
+- Never use npm, yarn, or bun or npx, bunx etc. unless absolutely necessary
 
 ## UI/UX Guidelines
 
