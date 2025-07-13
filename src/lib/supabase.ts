@@ -83,7 +83,7 @@ export async function updateUserProfile(userId: string, updates: Partial<{
 // Helper function to check connection
 export async function testConnection() {
   try {
-    const { error } = await supabase.from("users").select("count").limit(1);
+    const { error } = await supabase.from("profiles").select("count").limit(1);
     if (error && error.code !== "PGRST116") { // PGRST116 is "relation does not exist" which is expected before schema setup
       throw error;
     }
