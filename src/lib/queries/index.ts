@@ -5,6 +5,11 @@ export {
 } from "./badges";
 
 export {
+  useSubmitExerciseSession,
+  useUpdateVocabularyMastery,
+} from "./exercises";
+
+export {
   useLanguages,
   useLesson,
   useLessonProgress,

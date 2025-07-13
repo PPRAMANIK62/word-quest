@@ -1,8 +1,11 @@
-import { ArrowLeft, BookOpen, Clock, Target } from "lucide-react";
-import { useCallback } from "react";
+import { ArrowLeft, BookOpen, Clock, Target, Zap } from "lucide-react";
+import { useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
+import type { GameSession } from "@/types";
+
+import { ExerciseSession } from "@/components/game/exercises";
 import { LessonProgressTracker } from "@/components/lesson/lesson-progress-tracker";
 import { VocabularyCard } from "@/components/lesson/vocabulary-card";
 import { Badge } from "@/components/ui/badge";
@@ -12,12 +15,15 @@ import { Progress } from "@/components/ui/progress";
 import { useAudio } from "@/hooks/use-audio";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompleteLesson, useStartLesson, useUpdateLessonProgress } from "@/lib/mutations";
-import { useLesson, useLessonProgress, useVocabulary } from "@/lib/queries";
+import { useLesson, useLessonProgress, useSubmitExerciseSession, useVocabulary } from "@/lib/queries";
 
 export function LessonDetailPage() {
   const { lessonId } = useParams<{ lessonId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Exercise state
+  const [showExercises, setShowExercises] = useState(false);
 
   // Query hooks
   const { data: lesson, isLoading: lessonLoading } = useLesson(lessonId, user?.id);
@@ -28,6 +34,7 @@ export function LessonDetailPage() {
   const startLessonMutation = useStartLesson();
   const updateProgressMutation = useUpdateLessonProgress();
   const completeLessonMutation = useCompleteLesson();
+  const submitExerciseSessionMutation = useSubmitExerciseSession();
 
   // Audio hook
   const audio = useAudio({
@@ -129,6 +136,30 @@ export function LessonDetailPage() {
     const searchParams = currentLanguage ? `?lang=${currentLanguage}` : "";
     navigate(`/lessons${searchParams}`);
   }, [lesson?.languages?.code, lesson?.languages?.name, navigate]);
+
+  const handleStartExercises = useCallback(() => {
+    if (!vocabulary || vocabulary.length < 4) {
+      toast.error("Need at least 4 vocabulary words to start exercises");
+      return;
+    }
+    setShowExercises(true);
+    toast.info("Starting exercise session...");
+  }, [vocabulary]);
+
+  const handleExerciseComplete = useCallback(async (session: GameSession) => {
+    try {
+      await submitExerciseSessionMutation.mutateAsync(session);
+      setShowExercises(false);
+    }
+    catch (error) {
+      console.error("Failed to submit exercise session:", error);
+    }
+  }, [submitExerciseSessionMutation]);
+
+  const handleExerciseExit = useCallback(() => {
+    setShowExercises(false);
+    toast.info("Exercise session ended");
+  }, []);
 
   if (isLoading) {
     return (
@@ -248,8 +279,9 @@ export function LessonDetailPage() {
                     {startLessonMutation.isPending ? "Starting..." : "🚀 Start Lesson"}
                   </Button>
                 )
-              : !isCompleted
-                  ? (
+              : (
+                  <>
+                    {!isCompleted && (
                       <Button
                         onClick={handleCompleteLesson}
                         disabled={completeLessonMutation.isPending}
@@ -257,12 +289,25 @@ export function LessonDetailPage() {
                       >
                         {completeLessonMutation.isPending ? "Completing..." : "✅ Complete Lesson"}
                       </Button>
-                    )
-                  : (
+                    )}
+
+                    <Button
+                      onClick={handleStartExercises}
+                      disabled={!vocabulary || vocabulary.length < 4}
+                      variant={isCompleted ? "default" : "outline"}
+                      className="flex-1"
+                    >
+                      <Zap className="w-4 h-4 mr-2" />
+                      Practice Exercises
+                    </Button>
+
+                    {isCompleted && (
                       <Button variant="outline" className="flex-1">
                         🔄 Review Lesson
                       </Button>
                     )}
+                  </>
+                )}
           </div>
         </CardContent>
       </Card>
@@ -316,6 +361,22 @@ export function LessonDetailPage() {
             {" "}
             new words!
           </p>
+        </div>
+      )}
+
+      {/* Exercise Session */}
+      {showExercises && vocabulary && user && lessonId && (
+        <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 overflow-auto">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <ExerciseSession
+              vocabulary={vocabulary}
+              lessonId={lessonId}
+              userId={user.id}
+              onComplete={handleExerciseComplete}
+              onExit={handleExerciseExit}
+              onAudioPlay={audio.play}
+            />
+          </div>
         </div>
       )}
     </div>
