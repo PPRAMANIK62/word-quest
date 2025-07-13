@@ -23,6 +23,8 @@ type: "always_apply"
 
 ### Code Quality & Linting
 
+- **pnpm run lint:fix** - after every completed tasks ensure to run this command IMPORTANT.
+
 - **ESLint** - Use @antfu/eslint-config with the following configuration:
   - TypeScript support enabled
   - Formatters enabled

@@ -4,9 +4,11 @@ import { LoginButton } from "@/components/auth/login-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguages } from "@/lib/queries";
 
 export function WelcomePage() {
   const { isAuthenticated, loading } = useAuth();
+  const { data: languages, isLoading: languagesLoading } = useLanguages();
 
   // Redirect to dashboard if already authenticated
   if (loading) {
@@ -98,20 +100,36 @@ export function WelcomePage() {
                 Available Languages
               </p>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="p-4 border-2 border-red-200 dark:border-red-800 rounded-lg text-center">
-                  <div className="text-2xl mb-2">🇪🇸</div>
-                  <h3 className="font-semibold text-red-600 dark:text-red-400">Spanish</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Learn conversational Spanish
-                  </p>
-                </div>
-                <div className="p-4 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg text-center">
-                  <div className="text-2xl mb-2">🇩🇪</div>
-                  <h3 className="font-semibold text-yellow-600 dark:text-yellow-400">German</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Master German basics
-                  </p>
-                </div>
+                {languagesLoading
+                  ? (
+                // Loading skeleton
+                      Array.from({ length: 2 }).map((_, index) => (
+                        <div key={index} className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-center animate-pulse">
+                          <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded mx-auto mb-2"></div>
+                          <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        </div>
+                      ))
+                    )
+                  : languages && languages.length > 0
+                    ? (
+                        languages.slice(0, 2).map(language => (
+                          <div key={language.id} className="p-4 border-2 border-blue-200 dark:border-blue-800 rounded-lg text-center">
+                            <div className="text-2xl mb-2">{language.flag_emoji || "🌍"}</div>
+                            <h3 className="font-semibold text-blue-600 dark:text-blue-400">{language.name}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Learn
+                              {" "}
+                              {language.name}
+                            </p>
+                          </div>
+                        ))
+                      )
+                    : (
+                        <div className="col-span-2 text-center text-gray-500 dark:text-gray-400 py-4">
+                          Languages will be available soon!
+                        </div>
+                      )}
               </div>
             </div>
 

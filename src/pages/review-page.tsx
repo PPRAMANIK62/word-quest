@@ -1,19 +1,120 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/hooks/use-auth";
+import { useLanguages, useRecentMistakes, useReviewQueue, useUserVocabulary } from "@/lib/queries";
 
 export function ReviewPage() {
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const [currentCard, setCurrentCard] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [reviewMode, setReviewMode] = useState<"select" | "flashcard">("select");
+  const [selectedReviewSet, setSelectedReviewSet] = useState<string | null>(null);
 
-  const handleStartReview = (setTitle: string, wordCount: number) => {
+  // Query hooks for real data
+  const { data: languages } = useLanguages();
+
+  const selectedLanguage = searchParams.get("lang") || (languages?.[0]?.code || languages?.[0]?.name.toLowerCase() || "");
+  const selectedLanguageData = languages?.find(lang =>
+    lang.code === selectedLanguage || lang.name.toLowerCase() === selectedLanguage,
+  );
+
+  const { data: reviewQueue, isLoading: reviewQueueLoading } = useReviewQueue(
+    user?.id,
+    selectedLanguageData?.id,
+  );
+  const { data: recentMistakes, isLoading: mistakesLoading } = useRecentMistakes(
+    user?.id,
+    selectedLanguageData?.id,
+  );
+  const { data: allVocabulary, isLoading: vocabularyLoading } = useUserVocabulary(
+    user?.id,
+    selectedLanguageData?.id,
+  );
+
+  // Create review sets from real data
+  const reviewSets = [
+    {
+      id: "due",
+      title: "Due for Review",
+      description: "Words that need practice based on spaced repetition",
+      count: reviewQueue?.length || 0,
+      priority: "high",
+      icon: "🔥",
+      data: reviewQueue,
+      loading: reviewQueueLoading,
+    },
+    {
+      id: "mistakes",
+      title: "Recent Mistakes",
+      description: "Words you got wrong in recent sessions",
+      count: recentMistakes?.length || 0,
+      priority: "medium",
+      icon: "❌",
+      data: recentMistakes,
+      loading: mistakesLoading,
+    },
+    {
+      id: "all",
+      title: "All Vocabulary",
+      description: "Review all words you've learned so far",
+      count: allVocabulary?.length || 0,
+      priority: "low",
+      icon: "📚",
+      data: allVocabulary,
+      loading: vocabularyLoading,
+    },
+  ];
+
+  // Get current flashcards based on selected review set
+  const getCurrentFlashcards = () => {
+    const selectedSet = reviewSets.find(set => set.id === selectedReviewSet);
+    if (!selectedSet?.data)
+      return [];
+
+    return selectedSet.data.map((item) => {
+      // Handle different data structures from different review sets
+      let vocab;
+
+      if (item.vocabulary) {
+        // For user_vocabulary records and recent mistakes
+        vocab = item.vocabulary;
+      }
+      else {
+        // For direct vocabulary records (shouldn't happen with current queries, but safe fallback)
+        vocab = item;
+      }
+
+      return {
+        id: vocab?.id || "unknown",
+        word: vocab?.translated_word || "Unknown",
+        translation: vocab?.english_word || "Unknown",
+        pronunciation: vocab?.pronunciation || "",
+        example: vocab?.example_sentence_translated || "",
+        exampleTranslation: vocab?.example_sentence_english || "",
+      };
+    });
+  };
+
+  const flashcards = getCurrentFlashcards();
+
+  const handleStartReview = (setId: string, setTitle: string, wordCount: number) => {
+    if (wordCount === 0) {
+      toast.error("No words available for review in this set.");
+      return;
+    }
+
+    setSelectedReviewSet(setId);
     toast.info(`Starting review session: ${setTitle}`);
     setReviewMode("flashcard");
+    setCurrentCard(0);
+    setShowAnswer(false);
     setTimeout(() => {
       toast.success(`Loaded ${wordCount} words for review!`);
     }, 500);
@@ -26,69 +127,8 @@ export function ReviewPage() {
       hard: "No worries! This word will be reviewed more often.",
     };
     toast.success(messages[difficulty]);
+    // TODO: Update spaced repetition data in database
   };
-
-  const reviewSets = [
-    {
-      id: 1,
-      title: "Due for Review",
-      description: "Words that need practice based on spaced repetition",
-      count: 12,
-      priority: "high",
-      icon: "🔥",
-    },
-    {
-      id: 2,
-      title: "Recent Mistakes",
-      description: "Words you got wrong in recent sessions",
-      count: 8,
-      priority: "medium",
-      icon: "❌",
-    },
-    {
-      id: 3,
-      title: "All Vocabulary",
-      description: "Review all words you've learned so far",
-      count: 89,
-      priority: "low",
-      icon: "📚",
-    },
-    {
-      id: 4,
-      title: "Food & Drinks",
-      description: "Practice vocabulary from the Food & Drinks lesson",
-      count: 25,
-      priority: "medium",
-      icon: "🍽️",
-    },
-  ];
-
-  const flashcards = [
-    {
-      id: 1,
-      word: "Hola",
-      translation: "Hello",
-      pronunciation: "OH-lah",
-      example: "Hola, ¿cómo estás?",
-      exampleTranslation: "Hello, how are you?",
-    },
-    {
-      id: 2,
-      word: "Gracias",
-      translation: "Thank you",
-      pronunciation: "GRAH-see-ahs",
-      example: "Gracias por tu ayuda",
-      exampleTranslation: "Thank you for your help",
-    },
-    {
-      id: 3,
-      word: "Agua",
-      translation: "Water",
-      pronunciation: "AH-gwah",
-      example: "Necesito agua, por favor",
-      exampleTranslation: "I need water, please",
-    },
-  ];
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -270,7 +310,13 @@ export function ReviewPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">12</div>
+            {reviewQueueLoading
+              ? (
+                  <div className="text-2xl font-bold animate-pulse">--</div>
+                )
+              : (
+                  <div className="text-2xl font-bold text-red-600">{reviewQueue?.length || 0}</div>
+                )}
             <p className="text-xs text-gray-500">🔥 High priority</p>
           </CardContent>
         </Card>
@@ -278,24 +324,36 @@ export function ReviewPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              Review Streak
+              Total Vocabulary
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">5 days</div>
-            <p className="text-xs text-gray-500">📈 Keep going!</p>
+            {vocabularyLoading
+              ? (
+                  <div className="text-2xl font-bold animate-pulse">--</div>
+                )
+              : (
+                  <div className="text-2xl font-bold text-green-600">{allVocabulary?.length || 0}</div>
+                )}
+            <p className="text-xs text-gray-500">📚 Words learned</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              Mastery Rate
+              Recent Mistakes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">78%</div>
-            <p className="text-xs text-gray-500">🎯 Excellent!</p>
+            {mistakesLoading
+              ? (
+                  <div className="text-2xl font-bold animate-pulse">--</div>
+                )
+              : (
+                  <div className="text-2xl font-bold text-blue-600">{recentMistakes?.length || 0}</div>
+                )}
+            <p className="text-xs text-gray-500">❌ Need practice</p>
           </CardContent>
         </Card>
       </div>
@@ -322,19 +380,26 @@ export function ReviewPage() {
 
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-2xl font-bold text-blue-600">
-                  {set.count}
-                </span>
+                {set.loading
+                  ? (
+                      <span className="text-2xl font-bold text-blue-600 animate-pulse">--</span>
+                    )
+                  : (
+                      <span className="text-2xl font-bold text-blue-600">
+                        {set.count}
+                      </span>
+                    )}
                 <span className="text-sm text-gray-500">
                   {set.count === 1 ? "word" : "words"}
                 </span>
               </div>
 
               <Button
-                onClick={() => handleStartReview(set.title, set.count)}
+                onClick={() => handleStartReview(set.id, set.title, set.count)}
                 className="w-full"
+                disabled={set.loading || set.count === 0}
               >
-                Start Review Session
+                {set.loading ? "Loading..." : set.count === 0 ? "No words available" : "Start Review Session"}
               </Button>
             </CardContent>
           </Card>

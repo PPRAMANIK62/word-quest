@@ -51,9 +51,6 @@ export type {
   WebhookEvent,
 } from "./api";
 
-// Database types
-export type { Database } from "./supabase";
-
 // Game types
 export type {
   Achievement,
@@ -87,13 +84,15 @@ export type {
   VocabularyWithProgress,
 } from "./game";
 
+// Database types
+export type { Database } from "./supabase";
+
 // User types
 export type {
   ActivityType,
   AuthState,
   NotificationType,
   StreakInfo,
-  User,
   UserAchievementProgress,
   UserActivity,
   UserBackup,
