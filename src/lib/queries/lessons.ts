@@ -32,19 +32,35 @@ export function useLessons(languageId?: string, userId?: string) {
       if (!languageId)
         throw new Error("Language ID is required");
 
-      // First, get lessons with vocabulary count
+      // First, get lessons
       const { data: lessons, error: lessonsError } = await supabase
         .from("lessons")
-        .select(`
-          *,
-          vocabulary (count)
-        `)
+        .select("*")
         .eq("language_id", languageId)
-        .eq("is_active", true)
+        .eq("is_published", true)
         .order("order_index");
 
       if (lessonsError)
         throw lessonsError;
+
+      // Get vocabulary counts for all lessons
+      const vocabularyCountMap = new Map();
+      if (lessons.length > 0) {
+        const lessonIds = lessons.map(lesson => lesson.id);
+        const { data: vocabularyCounts, error: vocabError } = await supabase
+          .from("vocabulary")
+          .select("lesson_id")
+          .in("lesson_id", lessonIds);
+
+        if (vocabError)
+          throw vocabError;
+
+        // Count vocabulary per lesson
+        vocabularyCounts?.forEach((vocab) => {
+          const currentCount = vocabularyCountMap.get(vocab.lesson_id) || 0;
+          vocabularyCountMap.set(vocab.lesson_id, currentCount + 1);
+        });
+      }
 
       // If user is provided, get their progress separately
       const userProgressMap = new Map();
@@ -80,9 +96,7 @@ export function useLessons(languageId?: string, userId?: string) {
 
         return {
           ...lesson,
-          vocabularyCount: Array.isArray(lesson.vocabulary)
-            ? lesson.vocabulary.length
-            : (lesson.vocabulary as any)?.[0]?.count || 0,
+          vocabularyCount: vocabularyCountMap.get(lesson.id) || 0,
           progress,
           isCompleted,
           pointsEarned: userProgress?.score || 0,

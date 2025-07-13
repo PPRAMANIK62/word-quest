@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -6,26 +6,37 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
-import { useLanguages, useLessons } from "@/lib/queries";
+import { useLanguages, useLessons, useUserProfile } from "@/lib/queries";
 
 export function LessonsPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   // Query hooks for real data
   const { data: languages } = useLanguages();
+  const { data: userProfile } = useUserProfile(user?.id);
 
-  const selectedLanguage = searchParams.get("lang") || (languages?.[0]?.code || languages?.[0]?.name.toLowerCase() || "");
+  // Determine selected language: URL param > user profile > first available language
+  const urlLanguage = searchParams.get("lang");
+  const userSelectedLanguage = userProfile?.selected_language;
+  const selectedLanguage = urlLanguage || userSelectedLanguage || languages?.[0]?.code || "";
+
   const selectedLanguageData = languages?.find(lang =>
     lang.code === selectedLanguage || lang.name.toLowerCase() === selectedLanguage,
   );
 
-  const { data: lessons, isLoading: lessonsLoading } = useLessons(
+  const { data: lessons, isLoading: lessonsLoading, error: lessonsError } = useLessons(
     selectedLanguageData?.id,
     user?.id,
   );
 
-  const handleLessonAction = (_lessonId: string, lessonTitle: string, action: "start" | "continue" | "review") => {
+  // Show error if lessons failed to load
+  if (lessonsError) {
+    console.error("Failed to load lessons:", lessonsError);
+  }
+
+  const handleLessonAction = (lessonId: string, lessonTitle: string, action: "start" | "continue" | "review") => {
     const actionMessages = {
       start: `Starting "${lessonTitle}" lesson...`,
       continue: `Continuing "${lessonTitle}" lesson...`,
@@ -33,10 +44,8 @@ export function LessonsPage() {
     };
 
     toast.info(actionMessages[action]);
-    // Navigate to lesson (placeholder for now)
-    setTimeout(() => {
-      toast.success(`Lesson "${lessonTitle}" loaded successfully!`);
-    }, 1000);
+    // Navigate to lesson detail page
+    navigate(`/lessons/${lessonId}`);
   };
 
   // Calculate stats from real data
@@ -259,9 +268,33 @@ export function LessonsPage() {
               )
             : (
                 <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500 dark:text-gray-400">
-                    No lessons available for the selected language.
-                  </p>
+                  {lessonsError
+                    ? (
+                        <div className="space-y-2">
+                          <p className="text-red-500 dark:text-red-400">
+                            Failed to load lessons. Please try refreshing the page.
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Error:
+                            {" "}
+                            {lessonsError.message}
+                          </p>
+                        </div>
+                      )
+                    : !selectedLanguageData
+                        ? (
+                            <p className="text-gray-500 dark:text-gray-400">
+                              Please select a language to view lessons.
+                            </p>
+                          )
+                        : (
+                            <p className="text-gray-500 dark:text-gray-400">
+                              No lessons available for
+                              {" "}
+                              {selectedLanguageData.name}
+                              .
+                            </p>
+                          )}
                 </div>
               )}
       </div>
