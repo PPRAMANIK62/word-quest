@@ -1,6 +1,7 @@
 import { BookOpen, Home, RotateCcw, TrendingUp } from "lucide-react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
+import { OnboardingGuard } from "@/components/auth/onboarding-guard";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { UserMenu } from "@/components/auth/user-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -8,9 +9,10 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 export function Layout() {
   const location = useLocation();
   const isWelcomePage = location.pathname === "/";
+  const isLanguageSelectionPage = location.pathname === "/onboarding/language-selection";
 
-  // Don't show navigation on welcome page
-  if (isWelcomePage) {
+  // Don't show navigation on welcome page or language selection page
+  if (isWelcomePage || isLanguageSelectionPage) {
     return <Outlet />;
   }
 
@@ -113,7 +115,9 @@ export function Layout() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col">
         <ProtectedRoute>
-          <Outlet />
+          <OnboardingGuard>
+            <Outlet />
+          </OnboardingGuard>
         </ProtectedRoute>
       </main>
 

@@ -13,6 +13,8 @@ export {
 
 export {
   useRecentActivity,
+  useUpdateSelectedLanguage,
+  useUpdateUserProfile,
   useUserBadges,
   useUserProfile,
   useUserProgress,

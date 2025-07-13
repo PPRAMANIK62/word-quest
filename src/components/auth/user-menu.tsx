@@ -1,8 +1,8 @@
-import { ChevronDown, Languages, LogOut } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,18 +13,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguages, useUserProfile } from "@/lib/queries";
 
 export function UserMenu() {
   const [isLoading, setIsLoading] = useState(false);
   const { user, signOut } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  const currentLanguage = searchParams.get("lang") || "spanish";
+  // Get user profile and languages from database
+  const { data: userProfile } = useUserProfile(user?.id);
+  const { data: languages } = useLanguages();
 
-  const languages = {
-    spanish: { flag: "🇪🇸", name: "Spanish" },
-    german: { flag: "🇩🇪", name: "German" },
-  };
+  // Find the currently selected language for display purposes only
+  const selectedLanguage = languages?.find(
+    lang => lang.code === userProfile?.selected_language,
+  );
 
   const handleSignOut = async () => {
     try {
@@ -38,14 +40,6 @@ export function UserMenu() {
     finally {
       setIsLoading(false);
     }
-  };
-
-  const handleLanguageChange = (language: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("lang", language);
-    setSearchParams(newParams);
-    const languageName = languages[language as keyof typeof languages]?.name || language;
-    toast.success(`Switched to ${languageName}!`);
   };
 
   if (!user) {
@@ -68,30 +62,27 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-2 h-10 px-3">
+        <Button variant="ghost" className="flex items-center gap-3 h-11 px-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
           {/* User Avatar with Language Indicator */}
           <div className="relative">
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-              {user.user_metadata?.avatar_url
-                ? (
-                    <img
-                      src={user.user_metadata.avatar_url}
-                      alt={user.user_metadata?.full_name || user.email}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  )
-                : (
-                    <span className="text-white font-medium text-sm">
-                      {getInitials()}
-                    </span>
-                  )}
-            </div>
+            <Avatar className="h-9 w-9">
+              <AvatarImage
+                src={user.user_metadata?.avatar_url}
+                alt={user.user_metadata?.full_name || user.email || "User"}
+              />
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-semibold">
+                {getInitials()}
+              </AvatarFallback>
+            </Avatar>
             {/* Language Flag Indicator */}
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-xs border border-gray-200 dark:border-gray-600">
-              {languages[currentLanguage as keyof typeof languages]?.flag}
+            <div
+              key={selectedLanguage?.code || "default"}
+              className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-white dark:bg-gray-900 flex items-center justify-center text-sm border-2 border-white dark:border-gray-900 shadow-sm"
+            >
+              {selectedLanguage?.flag_emoji || "🌍"}
             </div>
           </div>
-          <ChevronDown className="w-4 h-4 text-gray-500" />
+          <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
         </Button>
       </DropdownMenuTrigger>
 
@@ -106,25 +97,6 @@ export function UserMenu() {
             </p>
           </div>
         </DropdownMenuLabel>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuLabel className="text-xs text-muted-foreground">
-          Language
-        </DropdownMenuLabel>
-
-        {Object.entries(languages).map(([key, lang]) => (
-          <DropdownMenuItem
-            key={key}
-            onClick={() => handleLanguageChange(key)}
-            className="cursor-pointer"
-          >
-            <Languages className="w-4 h-4 mr-2" />
-            <span className="mr-2">{lang.flag}</span>
-            {lang.name}
-            {currentLanguage === key && <span className="ml-auto text-xs">✓</span>}
-          </DropdownMenuItem>
-        ))}
 
         <DropdownMenuSeparator />
 

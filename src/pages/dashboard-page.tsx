@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -7,87 +6,43 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
-import { useLanguages, useRecentActivity, useUserProgress, useUserStats } from "@/lib/queries";
+import { useLanguages, useRecentActivity, useUserProfile, useUserProgress, useUserStats } from "@/lib/queries";
 
 export function DashboardPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const showLanguageSelection = !searchParams.get("lang");
-
   // Query hooks for real data
   const { data: languages, isLoading: languagesLoading } = useLanguages();
+  const { data: userProfile } = useUserProfile(user?.id);
   const { data: userStats, isLoading: statsLoading } = useUserStats(user?.id);
   const { data: recentActivity, isLoading: activityLoading } = useRecentActivity(user?.id);
 
-  // Get selected language from URL or use first available language
-  const urlLanguage = searchParams.get("lang");
-  const selectedLanguage = urlLanguage || (languages?.[0]?.code || languages?.[0]?.name.toLowerCase() || "");
+  // Get the user's selected language from their profile
+  const userSelectedLanguage = userProfile?.selected_language;
 
-  // Find the selected language ID from the database
+  // Find the selected language data from the database
   const selectedLanguageData = languages?.find((lang) => {
-    if (urlLanguage) {
-      // If language is from URL, match exactly
-      return lang.code === urlLanguage || lang.name.toLowerCase() === urlLanguage;
-    }
-    else {
-      // If no URL language, use the first available language
-      return languages?.[0] ? lang.id === languages[0].id : false;
-    }
+    return lang.code === userSelectedLanguage;
   });
+
   const { data: userProgress, isLoading: progressLoading } = useUserProgress(
     user?.id,
     selectedLanguageData?.id,
   );
 
-  // Auto-set default language if none is selected and languages are loaded
-  useEffect(() => {
-    if (!urlLanguage && languages && languages.length > 0 && !languagesLoading) {
-      const newParams = new URLSearchParams(searchParams);
-      // Use the first available language from database
-      const defaultLanguage = languages[0];
-      const langCode = defaultLanguage.code || defaultLanguage.name.toLowerCase();
-      newParams.set("lang", langCode);
-      setSearchParams(newParams, { replace: true });
-    }
-  }, [urlLanguage, languages, languagesLoading, searchParams, setSearchParams]);
-
-  // Use real language data from database
+  // Use the user's selected language data
   const config = selectedLanguageData
     ? {
         flag: selectedLanguageData.flag_emoji || "🌍",
         name: selectedLanguageData.name,
         color: "bg-blue-500",
       }
-    : languagesLoading
-      ? {
-          flag: "⏳",
-          name: "Loading...",
-          color: "bg-gray-500",
-        }
-      : languages && languages.length > 0
-        ? {
-            flag: languages[0].flag_emoji || "🌍",
-            name: languages[0].name,
-            color: "bg-blue-500",
-          }
-        : {
-            flag: "🌍",
-            name: "No Languages",
-            color: "bg-gray-500",
-          };
-
-  const handleLanguageSelect = (language: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("lang", language);
-    setSearchParams(newParams);
-    const selectedLang = languages?.find(lang =>
-      lang.code === language || lang.name.toLowerCase() === language,
-    );
-    const languageName = selectedLang?.name || language;
-    toast.success(`Great choice! You're now learning ${languageName}.`);
-  };
+    : {
+        flag: "⏳",
+        name: "Loading...",
+        color: "bg-gray-500",
+      };
 
   const handleStartLesson = () => {
     toast.info("Starting your next lesson...");
@@ -104,64 +59,8 @@ export function DashboardPage() {
     navigate("/progress");
   };
 
-  // Show language selection if no language is selected
-  if (showLanguageSelection || !selectedLanguage) {
-    return (
-      <div className="container mx-auto p-6 max-w-2xl">
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">
-              Welcome to WordQuest,
-              {" "}
-              {user?.user_metadata?.full_name || user?.email?.split("@")[0]}
-              !
-            </CardTitle>
-            <CardDescription>
-              Choose your language to start your learning journey
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {languagesLoading
-              ? (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
-                    <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
-                  </div>
-                )
-              : languages && languages.length > 0
-                ? (
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {languages.map(language => (
-                        <Button
-                          key={language.id}
-                          onClick={() => handleLanguageSelect(language.code)}
-                          size="lg"
-                          className="h-20 text-lg bg-blue-500 hover:bg-blue-600 flex flex-col gap-2"
-                        >
-                          <span className="text-2xl">{language.flag_emoji || "🌍"}</span>
-                          <span>
-                            Learn
-                            {" "}
-                            {language.name}
-                          </span>
-                        </Button>
-                      ))}
-                    </div>
-                  )
-                : (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                      <p>No languages available at the moment.</p>
-                      <p className="text-sm">Please check back later or contact support.</p>
-                    </div>
-                  )}
-            <p className="text-sm text-center text-gray-500 dark:text-gray-400">
-              You can change languages anytime from your dashboard
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // If user hasn't selected a language, they should be redirected by OnboardingGuard
+  // This component assumes the user has already selected a language
 
   return (
     <div className="container mx-auto p-6 space-y-8">

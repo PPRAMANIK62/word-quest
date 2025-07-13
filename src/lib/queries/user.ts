@@ -1,9 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import type { User, UserBadge } from "@/types/common";
 
 import { queryKeys } from "@/lib/query-client";
-import { supabase } from "@/lib/supabase";
+import { supabase, updateUserProfile } from "@/lib/supabase";
 
 // Get current user profile
 export function useUserProfile(userId?: string) {
@@ -262,7 +263,7 @@ export function useRecentActivity(userId?: string, days: number = 7) {
       }> = [];
 
       // Add completed lessons
-      completedLessons?.forEach(lesson => {
+      completedLessons?.forEach((lesson) => {
         if (lesson.completed_at) {
           activities.push({
             id: `lesson-${lesson.id}`,
@@ -277,7 +278,7 @@ export function useRecentActivity(userId?: string, days: number = 7) {
       });
 
       // Add earned badges
-      recentBadges?.forEach(userBadge => {
+      recentBadges?.forEach((userBadge) => {
         if (userBadge.earned_at) {
           activities.push({
             id: `badge-${userBadge.id}`,
@@ -292,7 +293,7 @@ export function useRecentActivity(userId?: string, days: number = 7) {
       });
 
       // Add review sessions (from user_sessions with words_practiced > 0)
-      sessions?.forEach(session => {
+      sessions?.forEach((session) => {
         if (session.words_practiced && session.words_practiced > 0 && session.started_at) {
           activities.push({
             id: `session-${session.id}`,
@@ -345,5 +346,91 @@ export function useUserBadges(userId?: string) {
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+}
+
+// Mutation to update user profile
+export function useUpdateUserProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, updates }: {
+      userId: string;
+      updates: Partial<{
+        display_name: string;
+        selected_language: string;
+        total_points: number;
+        current_streak: number;
+        longest_streak: number;
+        last_activity_date: string;
+      }>;
+    }) => {
+      return await updateUserProfile(userId, updates);
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate and refetch user profile queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.user.profile(variables.userId),
+      });
+
+      // Also invalidate user stats if we updated relevant fields
+      if (variables.updates.total_points !== undefined
+        || variables.updates.current_streak !== undefined
+        || variables.updates.longest_streak !== undefined) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.user.progress(variables.userId),
+        });
+      }
+
+      // Show success message for language changes
+      if (variables.updates.selected_language) {
+        toast.success("Language preference updated successfully!");
+      }
+    },
+    onError: (error: any) => {
+      console.error("Error updating user profile:", error);
+      toast.error("Failed to update profile. Please try again.");
+    },
+  });
+}
+
+// Mutation specifically for updating selected language
+export function useUpdateSelectedLanguage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, languageCode }: {
+      userId: string;
+      languageCode: string;
+    }) => {
+      return await updateUserProfile(userId, { selected_language: languageCode });
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate and refetch user profile queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.user.profile(variables.userId),
+      });
+
+      // Invalidate all user-related queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.user.progress(variables.userId),
+      });
+
+      // Invalidate language-related queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.languages.all,
+      });
+
+      // Force refetch of user profile to ensure UI updates
+      queryClient.refetchQueries({
+        queryKey: queryKeys.user.profile(variables.userId),
+      });
+
+      toast.success("Language updated successfully!");
+    },
+    onError: (error: any) => {
+      console.error("Error updating selected language:", error);
+      toast.error("Failed to update language. Please try again.");
+    },
   });
 }

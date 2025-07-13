@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import { Layout } from "@/components/layout";
 import { DashboardPage } from "@/pages/dashboard-page";
+import { LanguageSelectionPage } from "@/pages/language-selection-page";
 import { LessonsPage } from "@/pages/lessons-page";
 import { ProgressPage } from "@/pages/progress-page";
 import { ReviewPage } from "@/pages/review-page";
@@ -15,6 +16,10 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <WelcomePage />,
+      },
+      {
+        path: "onboarding/language-selection",
+        element: <LanguageSelectionPage />,
       },
       {
         path: "dashboard",
